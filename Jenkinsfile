@@ -1,45 +1,34 @@
 pipeline {
-    agent any
+  agent any
 
-    tools {
-        terraform 'Terraform'
+  environment {
+    AWS_ACCESS_KEY_ID = credentials('aws-access')      // set these in Jenkins credentials
+    AWS_SECRET_ACCESS_KEY = credentials('aws-secret')
+  }
+
+  stages {
+    stage('Init') {
+      steps {
+        dir('terraform-ec2') {
+          sh 'terraform init'
+        }
+      }
     }
 
-    stages {
-        stage("Init") {
-            steps {
-                withCredentials([
-                    usernamePassword(credentialsId: 'aws-creds', 
-                                     usernameVariable: 'AWS_ACCESS_KEY_ID', 
-                                     passwordVariable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    sh 'terraform init'
-                }
-            }
+    stage('Plan') {
+      steps {
+        dir('terraform-ec2') {
+          sh 'terraform plan'
         }
-
-        stage("Plan") {
-            steps {
-                withCredentials([
-                    usernamePassword(credentialsId: 'aws-creds', 
-                                     usernameVariable: 'AWS_ACCESS_KEY_ID', 
-                                     passwordVariable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    sh 'terraform plan'
-                }
-            }
-        }
-
-        stage("Apply") {
-            steps {
-                withCredentials([
-                    usernamePassword(credentialsId: 'aws-creds', 
-                                     usernameVariable: 'AWS_ACCESS_KEY_ID', 
-                                     passwordVariable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    sh 'terraform apply -auto-approve'
-                }
-            }
-        }
+      }
     }
+
+    stage('Apply') {
+      steps {
+        dir('terraform-ec2') {
+          sh 'terraform apply -auto-approve'
+        }
+      }
+    }
+  }
 }
